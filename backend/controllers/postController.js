@@ -104,21 +104,24 @@ export const likeUnlikePost = async (req, res) => {
       const updatedLikes = post.likes.filter(
         (id) => id.toString() !== userId.toString()
       );
-      res.status(200).json({ updatedLikes });
+      res.status(200).json(updatedLikes);
     } else {
       //like post
       post.likes.push(userId);
       await User.updateOne({ _id: userId }, { $push: { likedPosts: postId } });
 
       await post.save();
+      let userInfo = await User.findById({ _id: userId });
       const notification = new Notification({
         from: userId,
         to: post.user,
         type: "like",
+        fromUserName: userInfo?.userName,
       });
+
       await notification.save();
       const updatedLikes = post.likes;
-      res.status(200).json({ updatedLikes });
+      res.status(200).json(updatedLikes);
     }
   } catch (error) {
     console.log("Error in likeUnlikePost Controller - ", error?.message);
@@ -149,6 +152,7 @@ export const getLikedPosts = async (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     const likedPosts = await Post.find({ _id: { $in: user.likedPosts } })
+      .sort({ createdAt: -1 })
       .populate({ path: "user", select: "-password" })
       .populate({ path: "comments.user", select: "-password" });
 

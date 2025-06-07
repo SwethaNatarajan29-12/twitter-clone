@@ -5,6 +5,7 @@ import generateTokenAndSetCookie from "../lib/utils/generateToken.js";
 export const signup = async (req, res) => {
   try {
     const { fullName, userName, email, password } = req.body;
+    console.log("Payload form signup", req.body);
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({ error: "Invalid Email Format" });

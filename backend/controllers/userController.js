@@ -1,12 +1,14 @@
 import Notification from "../models/notificationModel.js";
 import User from "../models/userModels.js";
 import { v2 as cloudinary } from "cloudinary";
+import bcrypt from "bcryptjs";
 
 export const getUserProfile = async (req, res) => {
   try {
     const { userName } = req.params;
 
     const user = await User.findOne({ userName }).select("-password");
+    // console.log("UserProfile from backend", user);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -45,11 +47,12 @@ export const followUnfollowUser = async (req, res) => {
       await User.findByIdAndUpdate(id, { $push: { followers: req.user._id } });
       await User.findByIdAndUpdate(req.user._id, { $push: { following: id } });
       //send notification to the user
-
+      let userInfo = await User.findById({ _id: req.user._id });
       const newNotification = new Notification({
         type: "follow",
         from: req.user._id,
         to: userToModify._id,
+        fromUserName: userInfo?.userName,
       });
       await newNotification.save();
 
@@ -90,7 +93,7 @@ export const getSuggestedUsers = async (req, res) => {
 };
 
 export const updateUserProfile = async (req, res) => {
-  const { fullName, userName, currentPassword, newPassword, bio, link } =
+  const { fullName, userName, currentPassword, newPassword, bio, link, email } =
     req.body;
 
   let { profileImg, coverImg } = req.body;
@@ -137,7 +140,7 @@ export const updateUserProfile = async (req, res) => {
         );
       }
       const uploadedResponse = await cloudinary.uploader.upload(coverImg);
-      profileImg = uploadedResponse.secure_url;
+      coverImg = uploadedResponse.secure_url;
     }
     user.fullName = fullName || user.fullName;
     user.email = email || user.email;
