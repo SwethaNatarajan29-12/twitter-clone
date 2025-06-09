@@ -1,3 +1,4 @@
+import path from "path";
 import express from "express";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
@@ -14,9 +15,10 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-const app = express();
 
+const app = express();
 const app_port = process.env.APP_PORT || 8000;
+const __dirname = path.resolve();
 
 app.use(express.json()); //to parse request.body
 app.use(express.urlencoded({ extended: true })); // to parse form-data with url encoded
@@ -26,9 +28,13 @@ app.use("/api/users", userRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/notifications", notificationRoutes);
 
-app.get("/", (req, res) => {
-  res.send("Get api calling...");
-});
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "/frontend/dist")));
+
+  app.get(/(.*)/, (req,res)=>{
+    res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
+  })
+}
 app.listen(app_port, () => {
   console.log("The server is running on port - ", app_port);
   connectMongoDB();
